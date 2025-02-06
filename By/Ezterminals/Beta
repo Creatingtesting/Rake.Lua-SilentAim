@@ -1,0 +1,140 @@
+-- index isn’t mine some guy gave it I just made it work for the script
+
+-- getgenv not fully made
+
+-- Copyright Valid Till This Day.
+
+-- TestTestTest DA STRIKE DA DOWNHILL DA UPHILL DA HILL
+
+-- credits to xora for jump off set, anti ground, and Accessory remover.
+
+-- By Ezterminals
+
+local Players = game:GetService("Players")
+local CoreGui = game:GetService("CoreGui")
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = CoreGui
+
+local Label = Instance.new("TextLabel")
+Label.Parent = ScreenGui
+Label.Size = UDim2.new(0, 200, 0, 30)
+Label.Position = UDim2.new(0.5, -100, 0.1, 0)
+Label.BackgroundTransparency = 1
+Label.Text = "Join Discord https://discord.gg/gYjcc6CM, made by ezterminals FREE: Last Updated Feb 6 (silent aim, couldn’t test it and it’s shit rn wait a bit.)"
+Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+Label.TextScaled = true
+Label.Font = Enum.Font.SourceSansBold
+
+Players.LocalPlayer.CharacterAdded:Connect(function()
+    ScreenGui.Parent = CoreGui
+end)
+
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Pixeluted/adoniscries/main/Source.lua", true))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Creatingtesting/Rake.LuaU/refs/heads/main/By/Ezterminals"))()
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Camera = game:GetService("Workspace").CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+local UserInputService = game:GetService("UserInputService")
+
+local FovCircle = Drawing.new("Circle")
+FovCircle.Radius = 200
+FovCircle.Thickness = 3
+FovCircle.Color = Color3.fromRGB(1, 1, 1)
+FovCircle.Filled = false
+FovCircle.Visible = true
+
+getgenv().Rake = {
+    Settings = {
+        Prediction = 0.177729,
+        JumpOffSet = 0.0001,
+        Resolver = false,
+        AimPart = "HumanoidRootPart",
+        Misc = {
+            AutoReload = true,
+            AutoClicker = false,
+            Whitelist = {
+                UserWhitelist = false,
+                HwidWhitelist = true
+            },
+            AdvancedMisc = {
+                Desync = false,
+                AutoShoot = true,
+                AutoToxic = false
+            }
+        },
+        Premium = {
+            BlackList = false
+        },
+        AutoKick = {
+            Kick = false
+        },
+        Important = {
+            LookAt = true
+        },
+        AutoAir = {
+            AutoAir = true,
+            Delay = 0.1
+        },
+        AntiGroundShots = true
+    }
+}
+
+local function FindNearestEnemy()
+    local ClosestPlayer, ClosestPart, ClosestDistance = nil, nil, math.huge
+    for _, Player in pairs(Players:GetPlayers()) do
+        if Player ~= LocalPlayer then
+            local Character = Player.Character
+            if Character and Character:FindFirstChild("Humanoid") and Character.Humanoid.Health > 0 then
+                local TargetPart = Character:FindFirstChild(getgenv().Rake.Settings.AimPart)
+                if TargetPart then
+                    local ScreenPosition, OnScreen = Camera:WorldToViewportPoint(TargetPart.Position)
+                    local CenterScreen = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+                    local Distance = (Vector2.new(ScreenPosition.X, ScreenPosition.Y) - CenterScreen).Magnitude
+                    if OnScreen and Distance < FovCircle.Radius and Distance < ClosestDistance then
+                        ClosestPlayer = Player
+                        ClosestPart = TargetPart
+                        ClosestDistance = Distance
+                    end
+                end
+            end
+        end
+    end
+    return ClosestPlayer, ClosestPart
+end
+
+local function LookAt(TargetPart)
+    if TargetPart and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local RootPart = LocalPlayer.Character.HumanoidRootPart
+        local Direction = (TargetPart.Position - RootPart.Position).Unit
+        RootPart.CFrame = CFrame.new(RootPart.Position, RootPart.Position + Vector3.new(Direction.X, 0, Direction.Z))
+    end
+end
+
+RunService.RenderStepped:Connect(function()
+    local CenterScreen = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    FovCircle.Position = CenterScreen
+
+    local TargetPlayer, TargetPart = FindNearestEnemy()
+    if TargetPart then
+        if getgenv().Rake.Settings.Important.LookAt then
+            LookAt(TargetPart)
+        end
+
+        if getgenv().Rake.Settings.Misc.AdvancedMisc.AutoShoot then
+            local Velocity = TargetPart.AssemblyLinearVelocity
+            local PredictedPosition = TargetPart.Position + Velocity * getgenv().Rake.Settings.Prediction
+            PredictedPosition = PredictedPosition + Vector3.new(0, getgenv().Rake.Settings.JumpOffSet, 0)
+
+            local TargetScreenPos, OnScreen = Camera:WorldToViewportPoint(PredictedPosition)
+            if OnScreen then
+                local MousePosition = UserInputService:GetMouseLocation()
+                local MoveX = TargetScreenPos.X - MousePosition.X
+                local MoveY = TargetScreenPos.Y - MousePosition.Y
+                mousemoverel(MoveX, MoveY)
+            end
+        end
+    end
+end)
